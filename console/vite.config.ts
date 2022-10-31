@@ -18,7 +18,7 @@ export default defineConfig({
     emptyOutDir: true,
     lib: {
       entry: "src/index.ts",
-      name: "PluginMigrate",
+      name: "PluginWordPress",
       formats: ["iife"],
       fileName: () => "main.js",
     },

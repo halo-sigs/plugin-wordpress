@@ -1,15 +1,15 @@
 apiVersion: plugin.halo.run/v1alpha1
 kind: Plugin
 metadata:
-  name: PluginMigrate
+  name: PluginWordPress
 spec:
   enabled: true
-  version: 1.0.0-alpha.1
+  version: 0.0.1-alpha.1
   requires: "*"
-  author: halo-dev
-  logo: https://halo.run/logo
-  homepage: https://github.com/halo-sigs/plugin-migrate
-  displayName: "站点迁移"
-  description: "支持从 Halo 1.5/1.6 迁移数据"
+  author: wan92hen
+  logo: https://s.w.org/style/images/about/WordPress-logotype-wmark.png
+  homepage: https://github.com/wan92hen/plugin-wordpress
+  displayName: "WordPress导入"
+  description: "支持从 WordPress 导出的 XML 文件导入数据"
   license:
     - name: "MIT"

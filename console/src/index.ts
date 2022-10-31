@@ -1,27 +1,27 @@
 import { definePlugin } from "@halo-dev/console-shared";
-import MigrateView from "./views/MigrateView.vue";
+import WordPressView from "./views/WordPressView.vue";
 import { markRaw } from "vue";
 import MdiCogTransferOutline from "~icons/mdi/cog-transfer-outline";
 import "./styles/tailwind.css";
 
 export default definePlugin({
-  name: "PluginMigrate",
+  name: "PluginWordPress",
   components: [],
   routes: [
     {
       parentName: "Root",
       route: {
-        path: "/migrate",
+        path: "/wordpress",
         children: [
           {
             path: "",
-            name: "Migrate",
-            component: MigrateView,
+            name: "WordPress导入",
+            component: WordPressView,
             meta: {
-              title: "迁移",
+              title: "WordPress导入",
               searchable: true,
               menu: {
-                name: "迁移",
+                name: "WordPress导入",
                 group: "tool",
                 icon: markRaw(MdiCogTransferOutline),
                 priority: 0,
