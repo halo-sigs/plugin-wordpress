@@ -3,7 +3,8 @@ import $, { type CheerioAPI, type Cheerio, type AnyNode, type BasicAcceptedElems
 import type {
   WpPost,
   WpCategory,
-  WpTag
+  WpTag,
+  WpAuthor
 } from "../types/wp-models";
 
 const processAll = ($wpxml: CheerioAPI) => {
@@ -11,6 +12,7 @@ const processAll = ($wpxml: CheerioAPI) => {
   let wpTags: WpTag[] = [];
   let wpCategories: WpCategory[] = [];
   let wpPosts: WpPost[] = [];
+  let wpAuthors: WpAuthor[] = [];
 
   // 处理分类和标签
   $wpxml('wp\\:term').map(async (i, term) => {
@@ -39,7 +41,6 @@ const processAll = ($wpxml: CheerioAPI) => {
     }
   })
 
-  console.log($wpxml);
   $wpxml('item').find
 
   // 处理文章
@@ -62,6 +63,7 @@ const processAll = ($wpxml: CheerioAPI) => {
         isSticky: $(post).children('wp\\:is_sticky').text(),
         categories: [] as WpCategory[],
         tags: [] as WpTag[],
+        creator: $(post).children('dc\\:creator').text(),
         thumbnail: ""
       } as WpPost
       // 获取文章的标签和分类信息
@@ -69,15 +71,19 @@ const processAll = ($wpxml: CheerioAPI) => {
         $(post).children('category').each((i, taxonomy) => {
           // `category` takes priority and is use as the primary tag, so gets added to the list first
           if ($(taxonomy).attr('domain') === 'category') {
-            wpPost.categories.push(
-              wpCategories.find((item) =>
-                item.slug === $(taxonomy).attr('nicename')
-              ) || {} as WpCategory);
+            let wpCategory = wpCategories.find((item) =>
+                item.slug === decodeURI($(taxonomy).attr('nicename') as string)
+              )
+            if (wpCategory) {
+              wpPost.categories.push(wpCategory);
+            }
           } else if ($(taxonomy).attr('domain') === 'post_tag') {
-            wpPost.tags.push(
-              wpTags.find((item) =>
-                item.slug === $(taxonomy).attr('nicename')
-              ) || {} as WpTag);
+            let wpTag = wpTags.find((item) =>
+            item.slug === decodeURI($(taxonomy).attr('nicename') as string)
+          )
+            if (wpTag) {
+              wpPost.tags.push(wpTag);
+            }
           }
         });
       }
@@ -86,10 +92,19 @@ const processAll = ($wpxml: CheerioAPI) => {
     }
   })
 
+  $wpxml('wp\\:author').map(async (i, author)=>{
+    wpAuthors.push({
+      login: decodeURI($(author).children('wp\\:author_login').text()),
+      email: decodeURI($(author).children('wp\\:author_email').text()),
+      displayName: decodeURI($(author).children('wp\\:author_display_name').text()),
+    } as WpAuthor);
+  })
+
   return {
     wpTags,
     wpCategories,
-    wpPosts
+    wpPosts,
+    wpAuthors
   }
 }
 

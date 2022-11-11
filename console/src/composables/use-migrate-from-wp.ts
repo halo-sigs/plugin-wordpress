@@ -4,6 +4,7 @@ import type {
   WpCategory,
   WpPost,
   WpTag,
+  WpAuthor,
 } from "../types/wp-models";
 import type { AxiosResponse } from "axios";
 
@@ -11,12 +12,14 @@ interface useMigrateFromWordPressReturn {
   createTagRequests: () => Promise<AxiosResponse>[];
   createCategoryRequests: () => Promise<AxiosResponse>[];
   createPostRequests: () => Promise<AxiosResponse>[];
+  createUserRequests: () => Promise<AxiosResponse>[];
 }
 
 export function useMigrateFromWordPress(
   wpTags: Ref<WpTag[]>,
   wpCategories: Ref<WpCategory[]>,
   wpPosts: Ref<WpPost[]>,
+  wpAuthors: Ref<WpAuthor[]>,
 ): useMigrateFromWordPressReturn {
 
   function createTagRequests() {
@@ -79,8 +82,8 @@ export function useMigrateFromWordPress(
                 slug: item.title,
                 template: "",
                 deleted: item.status === "trash",
-                published: false,
-                publishTime: "",
+                publish: item.status === "publish",
+                publishTime: item.pubDate ? new Date(item.pubDate).toISOString() : "",
                 pinned: item.isSticky === "1",
                 allowComment: item.commentStatus === "closed",
                 visible: "PUBLIC",
@@ -93,6 +96,7 @@ export function useMigrateFromWordPress(
                 categories: categoryIds,
                 tags: tagIds,
                 htmlMetas: [],
+                owner: item.creator,
               },
               apiVersion: "content.halo.run/v1alpha1",
               kind: "Post",
@@ -108,19 +112,32 @@ export function useMigrateFromWordPress(
           },
         });
       }),
-      ...wpPosts.value
-        .filter((wpPost) => wpPost.status === "publish")
-        .map((item: WpPost) => {
-          return apiClient.post.publishPost({
-            name: item.id + "",
-          });
-        }),
     ];
+  }
+
+  function createUserRequests() {
+    return wpAuthors.value.map((item: WpAuthor) => {
+      return apiClient.extension.user.createv1alpha1User({
+        user: {
+          metadata: {
+            name: item.login + "",
+          },
+          kind: "User",
+          apiVersion: "v1alpha1",
+          spec: {
+            displayName: item.displayName,
+            email: item.email,
+            disabled: false,
+          },
+        },
+      });
+    });
   }
 
   return {
     createTagRequests,
     createCategoryRequests,
     createPostRequests,
+    createUserRequests,
   };
 }

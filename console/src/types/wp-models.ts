@@ -14,6 +14,7 @@ export interface WpPost {
     categories: WpCategory[];
     tags: WpTag[];
     thumbnail: string;
+    creator: string;
   }
   
 export interface WpCategory {
@@ -27,4 +28,10 @@ export interface WpTag {
     id: string;
     slug: string;
     name: string;
+}
+
+export interface WpAuthor {
+    login: string;
+    email: string;
+    displayName: string;
 }

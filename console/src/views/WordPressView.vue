@@ -16,7 +16,8 @@ import MdiFileCodeOutline from "~icons/mdi/file-code-outline";
 import type {
   WpPost,
   WpCategory,
-  WpTag
+  WpTag,
+  WpAuthor
 } from "../types/wp-models";
 
 import { ref } from "vue";
@@ -42,15 +43,18 @@ const loading = ref(false);
 const wpPosts = ref<WpPost[]>([] as WpPost[]);
 const wpCategories = ref<WpCategory[]>([] as WpCategory[]);
 const wpTags = ref<WpTag[]>([] as WpTag[]);
+const wpAuthors = ref<WpAuthor[]>([] as WpAuthor[]);
 
 const {
   createTagRequests,
   createCategoryRequests,
   createPostRequests,
+  createUserRequests,
 } = useMigrateFromWordPress(
   wpTags,
   wpCategories,
   wpPosts,
+  wpAuthors,
 );
 
 async function handleOpenFile() {
@@ -84,6 +88,7 @@ async function handleOpenFile() {
   wpTags.value = data.wpTags;
   wpCategories.value = data.wpCategories;
   wpPosts.value = data.wpPosts;
+  wpAuthors.value = data.wpAuthors;
 
 }
 
@@ -105,6 +110,13 @@ const handleImport = async () => {
     await Promise.all(categoryCreateRequests);
   } catch (error) {
     console.error("Failed to create categories", error);
+  }
+
+  const userCreateRequests = createUserRequests();
+  try {
+    await Promise.all(userCreateRequests);
+  } catch (error) {
+    console.error("Failed to create users", error);
   }
 
   const postCreateRequests = createPostRequests();
@@ -187,6 +199,19 @@ const handleImport = async () => {
             </ul>
           </VCard>
         </div>
+        <div class="migrate-h-96">
+          <VCard :body-class="['h-full', '!p-0', 'overflow-y-auto']" class="h-full" :title="`作者（${wpAuthors.length}）`">
+            <ul class="box-border h-full w-full divide-y divide-gray-100" role="list">
+              <li v-for="(author, index) in wpAuthors" :key="index">
+                <VEntity>
+                  <template #start>
+                    <VEntityField :title="author.login" :description="author.displayName"></VEntityField>
+                  </template>
+                </VEntity>
+              </li>
+            </ul>
+          </VCard>
+        </div>        
       </div>
       <div class="migrate-mt-8 migrate-self-center">
         <VButton :loading="loading" type="secondary" @click="handleImport">
