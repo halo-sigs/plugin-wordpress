@@ -4,7 +4,7 @@ metadata:
   name: PluginWordPress
 spec:
   enabled: true
-  version: 0.0.1-alpha.1
+  version: 0.0.2
   requires: "*"
   author: wan92hen
   logo: https://s.w.org/style/images/about/WordPress-logotype-wmark.png
