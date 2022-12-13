@@ -97,6 +97,7 @@ export function useMigrateFromWordPress(
                 tags: tagIds,
                 htmlMetas: [],
                 owner: item.creator,
+                cover: item.thumbnail,
               },
               apiVersion: "content.halo.run/v1alpha1",
               kind: "Post",
