@@ -18,7 +18,8 @@
     "axios": "^1.1.3",
     "cheerio": "1.0.0-rc.12",
     "performant-array-to-tree": "^1.11.0",
-    "vue": "^3.2.45"
+    "vue": "^3.2.45",
+    "vue-router": "^4.1.6"
   },
   "devDependencies": {
     "@iconify/json": "^2.1.137",

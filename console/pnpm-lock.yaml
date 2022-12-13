@@ -32,17 +32,19 @@ specifiers:
   vite: ^2.9.15
   vitest: ^0.13.1
   vue: ^3.2.45
+  vue-router: ^4.1.6
   vue-tsc: ^0.35.2
 
 dependencies:
   '@halo-dev/api-client': 0.0.36
-  '@halo-dev/components': 0.0.0-alpha.6_vue@3.2.45
-  '@halo-dev/console-shared': 2.0.0-beta.1_vue@3.2.45
+  '@halo-dev/components': 0.0.0-alpha.6_xsxatmlnmmg5bcuv3xdnj6fj7y
+  '@halo-dev/console-shared': 2.0.0-beta.1_xsxatmlnmmg5bcuv3xdnj6fj7y
   '@vueuse/core': 9.5.0_vue@3.2.45
   axios: 1.1.3
   cheerio: 1.0.0-rc.12
   performant-array-to-tree: 1.11.0
   vue: 3.2.45
+  vue-router: 4.1.6_vue@3.2.45
 
 devDependencies:
   '@iconify/json': 2.1.137
@@ -524,7 +526,7 @@ packages:
     resolution: {integrity: sha512-ZwJ9GBH6WxETCE/BD4PZWv3GUbHJXO33kvyEPsS/A4Qt7kmaQJKHuzI4wVqEoxcewNjC/PdnzuTiNSuSG4FzVA==}
     dev: false
 
-  /@halo-dev/components/0.0.0-alpha.6_vue@3.2.45:
+  /@halo-dev/components/0.0.0-alpha.6_xsxatmlnmmg5bcuv3xdnj6fj7y:
     resolution: {integrity: sha512-gHmKmUm8Pw2y7JDOtpWj8WVYeOk6QO71RdzWZRuuRUdUHk7EqrG8cJt5bjX5/hzDOtJ9IGx9MjjmJ75Ghknzrg==}
     peerDependencies:
       vue: ^3.2.37
@@ -541,15 +543,17 @@ packages:
       '@codemirror/view': 6.4.2
       codemirror: 6.0.1
       vue: 3.2.45
+      vue-router: 4.1.6_vue@3.2.45
     dev: false
 
-  /@halo-dev/console-shared/2.0.0-beta.1_vue@3.2.45:
+  /@halo-dev/console-shared/2.0.0-beta.1_xsxatmlnmmg5bcuv3xdnj6fj7y:
     resolution: {integrity: sha512-tbovPuWgo5VvN1r/19fkZwR9znYot0zMXuzPmahb1hLQY8qKl/e//oVaYGrJK1IwqOcrK9zNT4t9kDxkAiKQpA==}
     peerDependencies:
       vue: ^3.2.37
       vue-router: ^4.0.16
     dependencies:
       vue: 3.2.45
+      vue-router: 4.1.6_vue@3.2.45
     dev: false
 
   /@humanwhocodes/config-array/0.11.7:
@@ -997,6 +1001,10 @@ packages:
     dependencies:
       '@vue/compiler-dom': 3.2.45
       '@vue/shared': 3.2.45
+
+  /@vue/devtools-api/6.4.5:
+    resolution: {integrity: sha512-JD5fcdIuFxU4fQyXUu3w2KpAJHzTVdN+p4iOX2lMWSHMOoQdMAcpFLZzm9Z/2nmsoZ1a96QEhZ26e50xLBsgOQ==}
+    dev: false
 
   /@vue/eslint-config-prettier/7.0.0_mbd4zptqpjbepwpyh2zbtslqey:
     resolution: {integrity: sha512-/CTc6ML3Wta1tCe1gUeO0EYnVXfo3nJXsIhZ8WJr3sov+cGASr6yuiibJTL6lmIBm7GobopToOuB3B6AWyV0Iw==}
@@ -3719,6 +3727,15 @@ packages:
     transitivePeerDependencies:
       - supports-color
     dev: true
+
+  /vue-router/4.1.6_vue@3.2.45:
+    resolution: {integrity: sha512-DYWYwsG6xNPmLq/FmZn8Ip+qrhFEzA14EI12MsMgVxvHFDYvlr4NXpVF5hrRH1wVcDP8fGi5F4rxuJSl8/r+EQ==}
+    peerDependencies:
+      vue: ^3.2.0
+    dependencies:
+      '@vue/devtools-api': 6.4.5
+      vue: 3.2.45
+    dev: false
 
   /vue-tsc/0.35.2_typescript@4.7.4:
     resolution: {integrity: sha512-aqY16VlODHzqtKGUkqdumNpH+s5ABCkufRyvMKQlL/mua+N2DfSVnHufzSNNUMr7vmOO0YsNg27jsspBMq4iGA==}

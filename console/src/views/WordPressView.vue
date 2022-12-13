@@ -21,6 +21,7 @@ import type {
 } from "../types/wp-models";
 
 import { ref } from "vue";
+import { onBeforeRouteLeave } from "vue-router";
 import { useMigrateFromWordPress } from "@/composables/use-migrate-from-wp";
 import $ from 'cheerio';
 import process from '../utils/wp-parser';
@@ -93,6 +94,16 @@ async function handleOpenFile() {
 }
 
 const handleImport = async () => {
+
+  window.onbeforeunload = function (e) {
+    const message = "数据正在导入中，请勿关闭或刷新此页面。";
+    e = e || window.event;
+    if (e) {
+      e.returnValue = message;
+    }
+    return message;
+  };
+
   const tagCreateRequests = createTagRequests();
 
   try {
@@ -131,6 +142,17 @@ const handleImport = async () => {
 
   Toast.success("导入完成");
 };
+
+onBeforeRouteLeave((to, from, next) => {
+  if (loading.value) {
+    Dialog.warning({
+      title: "提示",
+      description: "数据正在导入中，请勿关闭或刷新此页面。",
+    });
+    next(false);
+  }
+  next();
+});
 </script>
 <template>
   <VPageHeader title="迁移">
