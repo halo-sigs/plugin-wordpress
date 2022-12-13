@@ -8,6 +8,7 @@ import {
   VEntityField,
   VEntity,
   Toast,
+  Dialog,
 } from "@halo-dev/components";
 import { useFileSystemAccess } from "@vueuse/core";
 import MdiCogTransferOutline from "~icons/mdi/cog-transfer-outline";
@@ -64,6 +65,15 @@ async function handleOpenFile() {
     return;
   }
 
+  
+  const { protocol, hostname } = location;
+
+  // https://developer.mozilla.org/en-US/docs/Web/API/File_System_Access_API
+  if (!["localhost", "127.0.0.1"].includes(hostname) && protocol === "http:") {
+    Toast.warning("当前无法选择文件，站点必须使用 HTTPS 协议");
+    return;
+  }
+
   await res.open();
 
   const $wpxml = $.load(res.data.value as string, {
@@ -84,7 +94,7 @@ async function handleOpenFile() {
     console.debug("上传的WordPress XML 文件由 %s 生成。", wordPressVersion);
   }
 
-  const data = process.processAll($wpxml);
+  const data = await process.processAll($wpxml);
 
   wpTags.value = data.wpTags;
   wpCategories.value = data.wpCategories;
@@ -140,7 +150,9 @@ const handleImport = async () => {
 
   loading.value = false;
 
-  Toast.success("导入完成");
+  Dialog.success({
+    title: "导入完成",
+  });
 };
 
 onBeforeRouteLeave((to, from, next) => {
