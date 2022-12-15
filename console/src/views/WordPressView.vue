@@ -18,7 +18,8 @@ import type {
   WpPost,
   WpCategory,
   WpTag,
-  WpAuthor
+  WpAuthor,
+  WpPage
 } from "../types/wp-models";
 
 import { ref } from "vue";
@@ -43,6 +44,7 @@ const res = useFileSystemAccess({
 const loading = ref(false);
 
 const wpPosts = ref<WpPost[]>([] as WpPost[]);
+const wpPages = ref<WpPage[]>([] as WpPage[]);
 const wpCategories = ref<WpCategory[]>([] as WpCategory[]);
 const wpTags = ref<WpTag[]>([] as WpTag[]);
 const wpAuthors = ref<WpAuthor[]>([] as WpAuthor[]);
@@ -51,11 +53,13 @@ const {
   createTagRequests,
   createCategoryRequests,
   createPostRequests,
+  createPageRequests,
   createUserRequests,
 } = useMigrateFromWordPress(
   wpTags,
   wpCategories,
   wpPosts,
+  wpPages,
   wpAuthors,
 );
 
@@ -99,6 +103,7 @@ async function handleOpenFile() {
   wpTags.value = data.wpTags;
   wpCategories.value = data.wpCategories;
   wpPosts.value = data.wpPosts;
+  wpPages.value = data.wpPages;
   wpAuthors.value = data.wpAuthors;
 
 }
@@ -141,11 +146,17 @@ const handleImport = async () => {
   }
 
   const postCreateRequests = createPostRequests();
-
   try {
     await Promise.all(postCreateRequests);
   } catch (error) {
     console.error("Failed to create posts", error);
+  }
+
+  const pageCreateRequests = createPageRequests();
+  try {
+    await Promise.all(pageCreateRequests);
+  } catch (error) {
+    console.error("Failed to create pages", error);
   }
 
   loading.value = false;
@@ -233,6 +244,19 @@ onBeforeRouteLeave((to, from, next) => {
             </ul>
           </VCard>
         </div>
+        <div class="migrate-h-96">
+          <VCard :body-class="['h-full', '!p-0', 'overflow-y-auto']" class="h-full" :title="`自定义页面（${wpPages.length}）`">
+            <ul class="box-border h-full w-full divide-y divide-gray-100" role="list">
+              <li v-for="(page, index) in wpPages" :key="index">
+                <VEntity>
+                  <template #start>
+                    <VEntityField :title="page.title" :description="page.description"></VEntityField>
+                  </template>
+                </VEntity>
+              </li>
+            </ul>
+          </VCard>
+        </div>        
         <div class="migrate-h-96">
           <VCard :body-class="['h-full', '!p-0', 'overflow-y-auto']" class="h-full" :title="`作者（${wpAuthors.length}）`">
             <ul class="box-border h-full w-full divide-y divide-gray-100" role="list">

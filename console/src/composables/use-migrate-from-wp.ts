@@ -5,6 +5,7 @@ import type {
   WpPost,
   WpTag,
   WpAuthor,
+  WpPage,
 } from "../types/wp-models";
 import type { AxiosResponse } from "axios";
 
@@ -12,6 +13,7 @@ interface useMigrateFromWordPressReturn {
   createTagRequests: () => Promise<AxiosResponse>[];
   createCategoryRequests: () => Promise<AxiosResponse>[];
   createPostRequests: () => Promise<AxiosResponse>[];
+  createPageRequests: () => Promise<AxiosResponse>[];
   createUserRequests: () => Promise<AxiosResponse>[];
 }
 
@@ -19,9 +21,9 @@ export function useMigrateFromWordPress(
   wpTags: Ref<WpTag[]>,
   wpCategories: Ref<WpCategory[]>,
   wpPosts: Ref<WpPost[]>,
-  wpAuthors: Ref<WpAuthor[]>,
+  wpPages: Ref<WpPage[]>,
+  wpAuthors: Ref<WpAuthor[]>
 ): useMigrateFromWordPressReturn {
-
   function createTagRequests() {
     return wpTags.value.map((item: WpTag) => {
       return apiClient.extension.tag.createcontentHaloRunV1alpha1Tag({
@@ -56,9 +58,9 @@ export function useMigrateFromWordPress(
             slug: item.slug,
             priority: 0,
             // 寻找parent为当前分类的子分类
-            children: wpCategories.value.filter((wpCat: WpCategory) =>
-              wpCat.parent === item.slug
-            ).flatMap(wpCat => wpCat.id)
+            children: wpCategories.value
+              .filter((wpCat: WpCategory) => wpCat.parent === item.slug)
+              .flatMap((wpCat) => wpCat.id),
           },
         },
       });
@@ -69,7 +71,9 @@ export function useMigrateFromWordPress(
     return [
       ...wpPosts.value.map((item: WpPost) => {
         const tagIds = item.tags.map((wpTag: WpTag) => wpTag.id + "");
-        const categoryIds = item.categories.map((wpCategory: WpCategory) => wpCategory.id + "");
+        const categoryIds = item.categories.map(
+          (wpCategory: WpCategory) => wpCategory.id + ""
+        );
 
         // 替换原始content中的WordPress附件图片URL地址为Halo对应地址
         // TODO
@@ -83,7 +87,9 @@ export function useMigrateFromWordPress(
                 template: "",
                 deleted: item.status === "trash",
                 publish: item.status === "publish",
-                publishTime: item.pubDate ? new Date(item.pubDate).toISOString() : "",
+                publishTime: item.pubDate
+                  ? new Date(item.pubDate).toISOString()
+                  : "",
                 pinned: item.isSticky === "1",
                 allowComment: item.commentStatus === "closed",
                 visible: "PUBLIC",
@@ -98,6 +104,50 @@ export function useMigrateFromWordPress(
                 htmlMetas: [],
                 owner: item.creator,
                 cover: item.thumbnail,
+              },
+              apiVersion: "content.halo.run/v1alpha1",
+              kind: "Post",
+              metadata: {
+                name: item.id + "",
+              },
+            },
+            content: {
+              raw: item.content,
+              content: item.content,
+              rawType: "HTML",
+            },
+          },
+        });
+      }),
+    ];
+  }
+
+  function createPageRequests() {
+    return [
+      ...wpPages.value.map((item: WpPage) => {
+        return apiClient.singlePage.draftSinglePage({
+          singlePageRequest: {
+            page: {
+              spec: {
+                title: item.title,
+                slug: item.title,
+                template: "",
+                deleted: item.status === "trash",
+                publish: item.status === "publish",
+                publishTime: item.pubDate
+                  ? new Date(item.pubDate).toISOString()
+                  : "",
+                pinned: item.isSticky === "1",
+                allowComment: item.commentStatus === "closed",
+                visible: "PUBLIC",
+                version: 1,
+                priority: 0,
+                excerpt: {
+                  autoGenerate: false,
+                  raw: item.excerpt,
+                },
+                htmlMetas: [],
+                owner: item.creator,
               },
               apiVersion: "content.halo.run/v1alpha1",
               kind: "Post",
@@ -139,6 +189,7 @@ export function useMigrateFromWordPress(
     createTagRequests,
     createCategoryRequests,
     createPostRequests,
+    createPageRequests,
     createUserRequests,
   };
 }
