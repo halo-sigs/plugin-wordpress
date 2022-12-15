@@ -11,18 +11,22 @@ import type {
   WpTag,
   WpAuthor,
   WpPage,
+  WpNavMenu,
+  WpNavMenuItem,
 } from "../types/wp-models";
 
 const processAll = async ($wpxml: CheerioAPI) => {
   let wpTags: WpTag[] = [];
   let wpCategories: WpCategory[] = [];
+  let wpNavMenus: WpNavMenu[] = [];
   let wpPosts: WpPost[] = [];
   let wpPages: WpPage[] = [];
   let wpAuthors: WpAuthor[] = [];
 
+  let wpNavMenuItems = await processMenuItems($wpxml);
   let wpAttachments = await processAttachments($wpxml);
 
-  // 处理分类和标签
+  // 处理分类、标签和菜单
   $wpxml("wp\\:term").map(async (i, term) => {
     const termTaxonomy = $(term).children("wp\\:term_taxonomy").text();
 
@@ -44,12 +48,21 @@ const processAll = async ($wpxml: CheerioAPI) => {
         } as WpCategory;
         wpCategories.push(wpCategory);
         break;
+      case "nav_menu":
+        let wpNavMenu = {
+          id: $(term).children("wp\\:term_id").text(),
+          slug: decodeURI($(term).children("wp\\:term_slug").text()),
+          name: decodeURI($(term).children("wp\\:term_name").text()),
+        } as WpNavMenu;
+        wpNavMenu.items = wpNavMenuItems.filter((item) => {
+          return item.navMenu === wpNavMenu.name;
+        });
+        wpNavMenus.push(wpNavMenu);
+        break;
       default:
         break;
     }
   });
-
-  $wpxml("item").find;
 
   // 处理文章和页面
   $wpxml("item").map(async (i, post) => {
@@ -143,6 +156,7 @@ const processAll = async ($wpxml: CheerioAPI) => {
     wpPosts,
     wpAuthors,
     wpPages,
+    wpNavMenus,
   };
 };
 
@@ -210,6 +224,61 @@ const processAttachments = async ($xml) => {
   await Promise.all(posts);
 
   return attachmentsOutput;
+};
+
+const processMenuItems = async ($xml) => {
+  let wpNavMenuItems: WpNavMenuItem[] = [];
+
+  let posts = $xml("item")
+    .map(async (i, post) => {
+      const postType = $(post).children("wp\\:post_type").text();
+
+      if (["nav_menu_item"].includes(postType)) {
+        let wpNavMenuItem = {
+          id: $(post).children("wp\\:post_id").text(),
+          name: $(post).children("title").text(),
+          order: $(post).children("wp\\:menu_order").text(),
+        } as WpNavMenuItem;
+
+        $(post)
+          .find("wp\\:postmeta")
+          .each((i, row) => {
+            let key = $(row).find("wp\\:meta_key").text();
+            let val = $(row).find("wp\\:meta_value").text();
+
+            switch (key) {
+              case "_menu_item_object":
+                wpNavMenuItem.targetType = val as
+                  | "page"
+                  | "post"
+                  | "category"
+                  | "custom";
+                break;
+              case "_menu_item_menu_item_parent":
+                wpNavMenuItem.parent = val;
+              case "_menu_item_object_id":
+                wpNavMenuItem.target = val;
+                break;
+              case "_menu_item_url":
+                wpNavMenuItem.target = val || wpNavMenuItem.target;
+                break;
+              default:
+                break;
+            }
+          });
+        wpNavMenuItem.navMenu = $(post)
+          .children("category")
+          .filter((i, el) => {
+            return $(el).attr("domain") === "nav_menu";
+          })
+          .attr("nicename") as string;
+        wpNavMenuItems.push(wpNavMenuItem);
+      }
+    })
+    .get();
+
+  await Promise.all(posts);
+  return wpNavMenuItems;
 };
 
 export default {

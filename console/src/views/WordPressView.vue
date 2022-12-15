@@ -19,14 +19,15 @@ import type {
   WpCategory,
   WpTag,
   WpAuthor,
-  WpPage
+  WpPage,
+  WpNavMenu,
 } from "../types/wp-models";
 
 import { ref } from "vue";
 import { onBeforeRouteLeave } from "vue-router";
 import { useMigrateFromWordPress } from "@/composables/use-migrate-from-wp";
-import $ from 'cheerio';
-import process from '../utils/wp-parser';
+import $ from "cheerio";
+import process from "../utils/wp-parser";
 
 const res = useFileSystemAccess({
   dataType: "Text",
@@ -48,6 +49,7 @@ const wpPages = ref<WpPage[]>([] as WpPage[]);
 const wpCategories = ref<WpCategory[]>([] as WpCategory[]);
 const wpTags = ref<WpTag[]>([] as WpTag[]);
 const wpAuthors = ref<WpAuthor[]>([] as WpAuthor[]);
+const wpNavMenus = ref<WpNavMenu[]>([] as WpNavMenu[]);
 
 const {
   createTagRequests,
@@ -55,12 +57,14 @@ const {
   createPostRequests,
   createPageRequests,
   createUserRequests,
+  createMenuRequests,
 } = useMigrateFromWordPress(
   wpTags,
   wpCategories,
   wpPosts,
   wpPages,
   wpAuthors,
+  wpNavMenus
 );
 
 async function handleOpenFile() {
@@ -69,7 +73,6 @@ async function handleOpenFile() {
     return;
   }
 
-  
   const { protocol, hostname } = location;
 
   // https://developer.mozilla.org/en-US/docs/Web/API/File_System_Access_API
@@ -83,16 +86,17 @@ async function handleOpenFile() {
   const $wpxml = $.load(res.data.value as string, {
     decodeEntities: false,
     xmlMode: true,
-    lowerCaseTags: true // needed to find `pubDate` tags
+    lowerCaseTags: true, // needed to find `pubDate` tags
   });
 
-  if (!$wpxml('channel > title').text()) {
+  if (!$wpxml("channel > title").text()) {
     Toast.warning("解析 WordPress 站点名失败，所选文件不符合要求");
     return;
   }
 
-  const wordPressVersion = $wpxml('channel > generator').text().match("v=(.*)")?.[1];
-
+  const wordPressVersion = $wpxml("channel > generator")
+    .text()
+    .match("v=(.*)")?.[1];
 
   if (wordPressVersion) {
     console.debug("上传的WordPress XML 文件由 %s 生成。", wordPressVersion);
@@ -105,11 +109,14 @@ async function handleOpenFile() {
   wpPosts.value = data.wpPosts;
   wpPages.value = data.wpPages;
   wpAuthors.value = data.wpAuthors;
-
+  // 根据 NavMenu ID 去重
+  let idMap = new Map();
+  wpNavMenus.value = data.wpNavMenus.filter(
+    (item) => !idMap.has(item["id"]) && idMap.set(item["id"], 1)
+  );
 }
 
 const handleImport = async () => {
-
   window.onbeforeunload = function (e) {
     const message = "数据正在导入中，请勿关闭或刷新此页面。";
     e = e || window.event;
@@ -127,7 +134,6 @@ const handleImport = async () => {
     console.error("Failed to create tags", error);
   }
 
-
   loading.value = true;
 
   const categoryCreateRequests = createCategoryRequests();
@@ -141,6 +147,13 @@ const handleImport = async () => {
   const userCreateRequests = createUserRequests();
   try {
     await Promise.all(userCreateRequests);
+  } catch (error) {
+    console.error("Failed to create users", error);
+  }
+
+  const menuCreateRequests = createMenuRequests();
+  try {
+    await Promise.all(menuCreateRequests);
   } catch (error) {
     console.error("Failed to create users", error);
   }
@@ -195,7 +208,11 @@ onBeforeRouteLeave((to, from, next) => {
     </template>
   </VPageHeader>
   <div class="p-4">
-    <VEmpty v-if="!res.data.value" message="请选择 WordPress 中导出的 XML 数据文件" title="当前没有选择数据文件">
+    <VEmpty
+      v-if="!res.data.value"
+      message="请选择 WordPress 中导出的 XML 数据文件"
+      title="当前没有选择数据文件"
+    >
       <template #actions>
         <VSpace>
           <VButton @click="handleOpenFile">选择文件</VButton>
@@ -203,14 +220,26 @@ onBeforeRouteLeave((to, from, next) => {
       </template>
     </VEmpty>
     <div class="migrate-flex migrate-flex-1 migrate-flex-col" v-else>
-      <div class="migrate-grid migrate-grid-cols-1 migrate-gap-3 sm:migrate-grid-cols-4">
+      <div
+        class="migrate-grid migrate-grid-cols-1 migrate-gap-3 sm:migrate-grid-cols-4"
+      >
         <div class="migrate-h-96">
-          <VCard :body-class="['h-full', '!p-0', 'overflow-y-auto']" class="h-full" :title="`标签（${wpTags.length}）`">
-            <ul class="box-border h-full w-full divide-y divide-gray-100" role="list">
+          <VCard
+            :body-class="['h-full', '!p-0', 'overflow-y-auto']"
+            class="h-full"
+            :title="`标签（${wpTags.length}）`"
+          >
+            <ul
+              class="box-border h-full w-full divide-y divide-gray-100"
+              role="list"
+            >
               <li v-for="(tag, index) in wpTags" :key="index">
                 <VEntity>
                   <template #start>
-                    <VEntityField :title="tag.name" :description="tag.slug"></VEntityField>
+                    <VEntityField
+                      :title="tag.name"
+                      :description="tag.slug"
+                    ></VEntityField>
                   </template>
                 </VEntity>
               </li>
@@ -218,13 +247,22 @@ onBeforeRouteLeave((to, from, next) => {
           </VCard>
         </div>
         <div class="migrate-h-96">
-          <VCard :body-class="['h-full', '!p-0', 'overflow-y-auto']" class="h-full"
-            :title="`分类（${wpCategories.length}）`">
-            <ul class="box-border h-full w-full divide-y divide-gray-100" role="list">
+          <VCard
+            :body-class="['h-full', '!p-0', 'overflow-y-auto']"
+            class="h-full"
+            :title="`分类（${wpCategories.length}）`"
+          >
+            <ul
+              class="box-border h-full w-full divide-y divide-gray-100"
+              role="list"
+            >
               <li v-for="(category, index) in wpCategories" :key="index">
                 <VEntity>
                   <template #start>
-                    <VEntityField :title="category.name" :description="category.slug"></VEntityField>
+                    <VEntityField
+                      :title="category.name"
+                      :description="category.slug"
+                    ></VEntityField>
                   </template>
                 </VEntity>
               </li>
@@ -232,12 +270,22 @@ onBeforeRouteLeave((to, from, next) => {
           </VCard>
         </div>
         <div class="migrate-h-96">
-          <VCard :body-class="['h-full', '!p-0', 'overflow-y-auto']" class="h-full" :title="`文章（${wpPosts.length}）`">
-            <ul class="box-border h-full w-full divide-y divide-gray-100" role="list">
+          <VCard
+            :body-class="['h-full', '!p-0', 'overflow-y-auto']"
+            class="h-full"
+            :title="`文章（${wpPosts.length}）`"
+          >
+            <ul
+              class="box-border h-full w-full divide-y divide-gray-100"
+              role="list"
+            >
               <li v-for="(post, index) in wpPosts" :key="index">
                 <VEntity>
                   <template #start>
-                    <VEntityField :title="post.title" :description="post.description"></VEntityField>
+                    <VEntityField
+                      :title="post.title"
+                      :description="post.description"
+                    ></VEntityField>
                   </template>
                 </VEntity>
               </li>
@@ -245,31 +293,74 @@ onBeforeRouteLeave((to, from, next) => {
           </VCard>
         </div>
         <div class="migrate-h-96">
-          <VCard :body-class="['h-full', '!p-0', 'overflow-y-auto']" class="h-full" :title="`自定义页面（${wpPages.length}）`">
-            <ul class="box-border h-full w-full divide-y divide-gray-100" role="list">
+          <VCard
+            :body-class="['h-full', '!p-0', 'overflow-y-auto']"
+            class="h-full"
+            :title="`自定义页面（${wpPages.length}）`"
+          >
+            <ul
+              class="box-border h-full w-full divide-y divide-gray-100"
+              role="list"
+            >
               <li v-for="(page, index) in wpPages" :key="index">
                 <VEntity>
                   <template #start>
-                    <VEntityField :title="page.title" :description="page.description"></VEntityField>
+                    <VEntityField
+                      :title="page.title"
+                      :description="page.description"
+                    ></VEntityField>
                   </template>
                 </VEntity>
               </li>
             </ul>
           </VCard>
-        </div>        
+        </div>
         <div class="migrate-h-96">
-          <VCard :body-class="['h-full', '!p-0', 'overflow-y-auto']" class="h-full" :title="`作者（${wpAuthors.length}）`">
-            <ul class="box-border h-full w-full divide-y divide-gray-100" role="list">
+          <VCard
+            :body-class="['h-full', '!p-0', 'overflow-y-auto']"
+            class="h-full"
+            :title="`菜单（${wpNavMenus.length}）`"
+          >
+            <ul
+              class="box-border h-full w-full divide-y divide-gray-100"
+              role="list"
+            >
+              <li v-for="(menu, index) in wpNavMenus" :key="index">
+                <VEntity>
+                  <template #start>
+                    <VEntityField
+                      :title="menu.name"
+                      :description="`共 ${menu.items.length} 个菜单项`"
+                    ></VEntityField>
+                  </template>
+                </VEntity>
+              </li>
+            </ul>
+          </VCard>
+        </div>
+        <div class="migrate-h-96">
+          <VCard
+            :body-class="['h-full', '!p-0', 'overflow-y-auto']"
+            class="h-full"
+            :title="`作者（${wpAuthors.length}）`"
+          >
+            <ul
+              class="box-border h-full w-full divide-y divide-gray-100"
+              role="list"
+            >
               <li v-for="(author, index) in wpAuthors" :key="index">
                 <VEntity>
                   <template #start>
-                    <VEntityField :title="author.login" :description="author.displayName"></VEntityField>
+                    <VEntityField
+                      :title="author.login"
+                      :description="author.displayName"
+                    ></VEntityField>
                   </template>
                 </VEntity>
               </li>
             </ul>
           </VCard>
-        </div>        
+        </div>
       </div>
       <div class="migrate-mt-8 migrate-self-center">
         <VButton :loading="loading" type="secondary" @click="handleImport">
