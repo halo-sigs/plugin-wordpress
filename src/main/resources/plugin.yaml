@@ -4,9 +4,9 @@ metadata:
   name: PluginWordPress
 spec:
   enabled: true
-  version: 0.0.3
+  version: 0.0.4
   requires: "*"
-  author: 
+  author:
     name: wan92hen
     website: https://github.com/wan92hen
   logo: https://s.w.org/style/images/about/WordPress-logotype-wmark.png
