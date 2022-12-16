@@ -51,3 +51,20 @@ export interface WpAuthor {
   email: string;
   displayName: string;
 }
+
+export interface WpNavMenu {
+  id: string;
+  slug: string;
+  name: string;
+  items: WpNavMenuItem[];
+}
+
+export interface WpNavMenuItem {
+  id: string;
+  name: string;
+  targetType: "page" | "post" | "category" | "custom";
+  target: string;
+  order: string;
+  parent: string;
+  navMenu: string;
+}

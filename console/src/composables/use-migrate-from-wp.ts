@@ -6,8 +6,11 @@ import type {
   WpTag,
   WpAuthor,
   WpPage,
+  WpNavMenu,
+  WpNavMenuItem,
 } from "../types/wp-models";
 import type { AxiosResponse } from "axios";
+import type { MenuItem } from "@halo-dev/api-client/index";
 
 interface useMigrateFromWordPressReturn {
   createTagRequests: () => Promise<AxiosResponse>[];
@@ -15,6 +18,7 @@ interface useMigrateFromWordPressReturn {
   createPostRequests: () => Promise<AxiosResponse>[];
   createPageRequests: () => Promise<AxiosResponse>[];
   createUserRequests: () => Promise<AxiosResponse>[];
+  createMenuRequests: () => Promise<AxiosResponse>[];
 }
 
 export function useMigrateFromWordPress(
@@ -22,7 +26,8 @@ export function useMigrateFromWordPress(
   wpCategories: Ref<WpCategory[]>,
   wpPosts: Ref<WpPost[]>,
   wpPages: Ref<WpPage[]>,
-  wpAuthors: Ref<WpAuthor[]>
+  wpAuthors: Ref<WpAuthor[]>,
+  wpNavMenu: Ref<WpNavMenu[]>
 ): useMigrateFromWordPressReturn {
   function createTagRequests() {
     return wpTags.value.map((item: WpTag) => {
@@ -185,11 +190,117 @@ export function useMigrateFromWordPress(
     });
   }
 
+  function createMenuRequests() {
+    // create menu and menuitem request
+    const menuRequests: Promise<AxiosResponse>[] = [];
+
+    const menuItemsToCreate: MenuItem[] = [] as MenuItem[];
+    wpNavMenu.value.forEach((menu: WpNavMenu) => {
+      menuRequests.push(
+        apiClient.extension.menu.createv1alpha1Menu({
+          menu: {
+            kind: "Menu",
+            apiVersion: "v1alpha1",
+            metadata: {
+              name: menu.id,
+            },
+            spec: {
+              displayName: menu.name,
+              menuItems: menu.items.map((menuItem: WpNavMenuItem) => {
+                return menuItem.id + "";
+              }),
+            },
+          },
+        })
+      );
+
+      menu.items.forEach((menuItem) => {
+        let haloMenuItem = {
+          kind: "MenuItem",
+          apiVersion: "v1alpha1",
+          metadata: {
+            name: menuItem.id + "",
+          },
+          spec: {
+            displayName: menuItem.name,
+            priority: Number(menuItem.order),
+            children:
+              menu.items
+                .filter((item: WpNavMenuItem) => menuItem.parent === item.id)
+                .flatMap((item) => item.id) || [],
+          },
+        } as MenuItem;
+        switch (menuItem.targetType) {
+          case "page":
+            haloMenuItem.spec.targetRef = {
+              group: "content.halo.run",
+              kind: "SinglePage",
+              name: wpPages.value
+                .filter((item: WpPage) => menuItem.target === item.id)
+                .flatMap((item) => item.id)[0],
+              version: "v1alpha1",
+            };
+            haloMenuItem.spec.displayName =
+              menuItem.name ||
+              wpPages.value
+                .filter((item: WpPage) => menuItem.target === item.id)
+                .flatMap((item) => item.title)[0];
+            break;
+          case "post":
+            haloMenuItem.spec.targetRef = {
+              group: "content.halo.run",
+              kind: "Post",
+              name: wpPosts.value
+                .filter((item: WpPost) => menuItem.target === item.id)
+                .flatMap((item) => item.id)[0],
+              version: "v1alpha1",
+            };
+            haloMenuItem.spec.displayName =
+              menuItem.name ||
+              wpPosts.value
+                .filter((item: WpPost) => menuItem.target === item.id)
+                .flatMap((item) => item.title)[0];
+            break;
+          case "category":
+            haloMenuItem.spec.targetRef = {
+              group: "content.halo.run",
+              kind: "Category",
+              name: wpCategories.value
+                .filter((item: WpCategory) => menuItem.target === item.id)
+                .flatMap((item) => item.id)[0],
+              version: "v1alpha1",
+            };
+            haloMenuItem.spec.displayName =
+              menuItem.name ||
+              wpCategories.value
+                .filter((item: WpCategory) => menuItem.target === item.id)
+                .flatMap((item) => item.name)[0];
+            break;
+          case "custom":
+            haloMenuItem.spec.href = menuItem.target;
+            break;
+          default:
+            break;
+        }
+        menuItemsToCreate.push(haloMenuItem);
+      });
+    });
+    const menuItemRequests: Promise<AxiosResponse>[] = menuItemsToCreate.map(
+      (menuItem) => {
+        return apiClient.extension.menuItem.createv1alpha1MenuItem({
+          menuItem: menuItem,
+        });
+      }
+    );
+    return [...menuItemRequests, ...menuRequests];
+  }
+
   return {
     createTagRequests,
     createCategoryRequests,
     createPostRequests,
     createPageRequests,
     createUserRequests,
+    createMenuRequests,
   };
 }
