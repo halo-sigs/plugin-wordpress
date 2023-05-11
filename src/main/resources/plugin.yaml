@@ -14,4 +14,5 @@ spec:
   displayName: "WordPress导入"
   description: "支持从 WordPress 导出的 XML 文件导入数据"
   license:
-    - name: "MIT"
+    - name: "GPL-3.0"
+      url: "https://github.com/halo-sigs/plugin-wordpress/blob/main/LICENSE"
