@@ -1,3 +1,10 @@
+鉴于站点迁移插件已经支持了多平台的数据迁移，本仓库将进行归档处理。需要从 WordPress 迁移至 Halo 的用户可以使用站点迁移插件进行迁移。
+
+插件获取：
+- Halo 应用市场：https://halo.run/store/apps/app-TlUBt
+- GitHub 仓库：https://github.com/halo-sigs/plugin-migrate
+
+-----
 # plugin-wordpress
 
 支持将 WordPress 导出的 XML 文件导入到 Halo 2.0 版本中。
